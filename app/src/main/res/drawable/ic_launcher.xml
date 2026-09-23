@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Background -->
+    <path
+        android:fillColor="#01579B"
+        android:pathData="M24,24m-24,0a24,24 0,1 1,48 0a24,24 0,1 1,-48 0" />
+    <!-- Crescent moon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31,6 C22,8 16,14 16,24 C16,34 22,40 31,42 C26,40 23,37 21,33 C19,29 19,26 20,23 C21,19 23,16 26,14 C28,12 29,10 31,8 C31,7 31,7 31,6 Z" />
+    <!-- Four-point star -->
+    <path
+        android:fillColor="#FFEA77"
+        android:pathData="M31,12 L32.4,15.6 L36,17 L32.4,18.4 L31,22 L29.6,18.4 L26,17 L29.6,15.6 Z" />
+</vector>

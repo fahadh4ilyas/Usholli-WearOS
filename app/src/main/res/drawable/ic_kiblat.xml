@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Kaaba body (cube) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,3 L18,3 L18,21 L6,21 Z" />
+    <!-- Gold band (hizam) -->
+    <path
+        android:fillColor="#FDD10D"
+        android:pathData="M6,5 L18,5 L18,7.5 L6,7.5 Z" />
+    <!-- Gold arched door -->
+    <path
+        android:fillColor="#FDD10D"
+        android:pathData="M9.5,21 L9.5,13 A2.5,2.5 0 0 1 14.5,13 L14.5,21 Z" />
+    <!-- Door inner -->
+    <path
+        android:fillColor="#111111"
+        android:pathData="M10.5,21 L10.5,14 A1.5,1.5 0 0 1 13.5,14 L13.5,21 Z" />
+</vector>

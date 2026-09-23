@@ -1,0 +1,45 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <!-- Dark tile background -->
+    <path
+        android:fillColor="#040D18"
+        android:pathData="M0,0h120v120h-120z" />
+    <!-- Header (location) -->
+    <path
+        android:fillColor="#B0B0B0"
+        android:pathData="M16,18h50v5h-50z" />
+    <!-- Schedule rows -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,36h30v6h-30z" />
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M90,36h14v6h-14z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,52h30v6h-30z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M90,52h14v6h-14z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,68h30v6h-30z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M90,68h14v6h-14z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,84h30v6h-30z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M90,84h14v6h-14z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,100h30v6h-30z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M90,100h14v6h-14z" />
+</vector>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#01579B</color>
+    <color name="colorPrimaryDark">#002F6C</color>
+    <color name="colorAccent">#4F83CC</color>
+    <color name="window">#FAFAFA</color>
+    <color name="windowDark">#EEEEEE</color>
+    <color name="windowDarker">#DDDDDD</color>
+    <color name="text">#808080</color>
+    <color name="subtext">#B0B0B0</color>
+
+    <!-- Sky colors per period -->
+    <color name="imsakSky">#212121</color>
+    <color name="imsakSkyDark">#424242</color>
+    <color name="imsakSun">#EDF6E1</color>
+
+    <color name="shubuhSky">#1A237E</color>
+    <color name="shubuhSkyDark">#3F51B5</color>
+    <color name="shubuhSun">#EDF6E1</color>
+
+    <color name="riseSky">#9FA8DA</color>
+    <color name="riseSkyDark">#EE856A</color>
+    <color name="riseSun">#EDF6E1</color>
+
+    <color name="dhuhaSky">#5C6BC0</color>
+    <color name="dhuhaSkyDark">#9FA8DA</color>
+    <color name="dhuhaSun">#FFF7C4</color>
+
+    <color name="dhuhurSky">#42A5F5</color>
+    <color name="dhuhurSkyDark">#90CAF9</color>
+    <color name="dhuhurSun">#FFF7C4</color>
+
+    <color name="asharSky">#1E88E5</color>
+    <color name="asharSkyDark">#0D47A1</color>
+    <color name="asharSun">#FDD10D</color>
+
+    <color name="maghribSky">#4A148C</color>
+    <color name="maghribSkyDark">#8E24AA</color>
+    <color name="maghribSun">#DC1A0B</color>
+
+    <color name="isyaSky">#040D18</color>
+    <color name="isyaSkyDark">#004366</color>
+    <color name="isyaMoon">#F5F6FC</color>
+</resources>

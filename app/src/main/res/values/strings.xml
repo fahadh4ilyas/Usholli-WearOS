@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Usholli</string>
+
+    <!-- Navigation -->
+    <string name="jadwal">Jadwal</string>
+    <string name="kiblat">Kiblat</string>
+    <string name="pengaturan">Pengaturan</string>
+
+    <!-- Tile & complication -->
+    <string name="tile_label">Jadwal Sholat</string>
+    <string name="complication_label">Waktu Sholat</string>
+
+    <!-- Periods -->
+    <string name="period_imsak">Imsak</string>
+    <string name="period_shubuh">Shubuh</string>
+    <string name="period_terbit">Terbit</string>
+    <string name="period_dhuha">Dhuha</string>
+    <string name="period_dzuhur">Dzuhur</string>
+    <string name="period_jumat">Jum\'at</string>
+    <string name="period_ashar">Ashar</string>
+    <string name="period_maghrib">Maghrib</string>
+    <string name="period_isya">Isya</string>
+
+    <!-- Period abbreviations (for tiles/complications where space is tight) -->
+    <string name="period_short_imsak">Im</string>
+    <string name="period_short_shubuh">Sh</string>
+    <string name="period_short_terbit">Te</string>
+    <string name="period_short_dhuha">Dh</string>
+    <string name="period_short_dzuhur">Dz</string>
+    <string name="period_short_ashar">As</string>
+    <string name="period_short_maghrib">Ma</string>
+    <string name="period_short_isya">Is</string>
+
+    <!-- Notification preference -->
+    <string name="notif_type_nothing">Tidak Ada</string>
+    <string name="notif_type_silent">Sunyi</string>
+    <string name="notif_type_vibrate">Getar</string>
+    <string name="notif_type_default">Bawaan Sistem</string>
+    <string name="notif_type_ringtone">Ringtone</string>
+    <string name="notif_type_takbir">Takbir</string>
+    <string name="notification">Notifikasi</string>
+    <string name="pre_reminder">Pengingat sebelumnya</string>
+    <string name="no_reminder">Tanpa Pengingat</string>
+    <string name="reminder_5">5 menit</string>
+    <string name="reminder_10">10 menit</string>
+    <string name="reminder_15">15 menit</string>
+    <string name="reminder_20">20 menit</string>
+    <string name="reminder_25">25 menit</string>
+    <string name="reminder_30">30 menit</string>
+    <string name="reminder_info">Pengingat %1$d menit</string>
+    <string name="preference_title">Preferensi %1$s</string>
+    <string name="minutes_suffix">menit</string>
+    <string name="pick_ringtone">Pilih Nada</string>
+    <string name="choose">Pilih</string>
+    <string name="cancel">Batal</string>
+
+    <!-- Home -->
+    <string name="next_prayer">%1$s lagi</string>
+    <string name="period_time">%1$02d:%2$02d</string>
+    <string name="prayer_time">Waktunya %1$s</string>
+    <string name="reminder_title">%1$d menit lagi memasuki waktu %2$s</string>
+    <string name="next_prayer_city">Untuk wilayah %1$s dan sekitarnya</string>
+    <string name="next_prayer_city_default">Untuk wilayah Anda dan sekitarnya</string>
+
+    <!-- Settings -->
+    <string name="location">Lokasi</string>
+    <string name="city">Kota</string>
+    <string name="select_city_short">Pilih Kota</string>
+    <string name="auto_detect">Deteksi Otomatis</string>
+    <string name="alarm_mode">Tingkatkan Akurasi Notifikasi</string>
+    <string name="alarm_mode_desc">Ikon alarm akan muncul untuk meningkatkan akurasi notifikasi</string>
+    <string name="exact_alarm_permission">Izinkan Alarm Tepat</string>
+    <string name="simulate">Simulasi Notifikasi</string>
+    <string name="complication_section">Komplikasi</string>
+    <string name="complication_swap">Tukar Judul &amp; Teks</string>
+    <string name="other_schedules">Jadwal Lain</string>
+    <string name="hijri_correction">Koreksi Tanggal Hijriyah</string>
+    <string name="hijri_correction_m2">-2 hari</string>
+    <string name="hijri_correction_m1">-1 hari</string>
+    <string name="hijri_correction_0">Tidak Ada</string>
+    <string name="hijri_correction_p1">+1 hari</string>
+    <string name="hijri_correction_p2">+2 hari</string>
+    <string name="not_found">Tidak ditemukan</string>
+    <string name="search_city">Cari kota…</string>
+    <string name="location_permission_needed">Kompas kiblat membutuhkan ijin untuk mengakses lokasi Anda.</string>
+    <string name="sensor_not_found">Sensor kompas tidak tersedia.</string>
+    <string name="detecting_location">Mendeteksi lokasi…</string>
+    <string name="degree_angle">Derajat Sudut: %1$s°</string>
+    <string name="loading">Memuat…</string>
+    <string name="no_schedule">Belum ada jadwal. Pilih kota terlebih dahulu.</string>
+    <string name="select_city_first">Pilih kota Anda untuk melihat jadwal sholat.</string>
+    <string name="failed_load_data">Gagal mengambil data, pastikan koneksi internet Anda tersedia</string>
+</resources>
