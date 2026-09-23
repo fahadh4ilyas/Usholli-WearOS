@@ -21,6 +21,7 @@ import com.mrhabibi.usholli.wear.data.SettingsStore
 object Notifications {
 
     private const val CHANNEL_ID = "usholli_notifications"
+    private const val CHANNEL_ID_SILENT = "usholli_notifications_silent"
     private const val NOTIF_ID_ADZAN = 1
     private const val NOTIF_ID_REMINDER = 2
 
@@ -59,21 +60,38 @@ object Notifications {
         }
     }
 
-    /** Create a channel with no default sound/vibration so each notification controls its own. */
+    /** Create the vibrating + silent channels. Sound is played via the media stream. */
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            context.getString(R.string.notification),
-            NotificationManager.IMPORTANCE_HIGH,
-        ).apply {
-            description = context.getString(R.string.notification)
-            setSound(null, null)
-            setVibrationPattern(null)
-            setShowBadge(false)
-        }
-        manager.createNotificationChannel(channel)
+
+        // Vibrating channel (default for sound/vibrate types).
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.notification),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notification)
+                setSound(null, null)
+                setVibrationPattern(vibrationPattern)
+                setShowBadge(false)
+            },
+        )
+
+        // Silent channel (no vibration, for the "Sunyi" type).
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID_SILENT,
+                context.getString(R.string.notification),
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = context.getString(R.string.notification)
+                setSound(null, null)
+                setVibrationPattern(null)
+                setShowBadge(false)
+            },
+        )
     }
 
     /** Show the "it is time for prayer" notification, honouring the chosen type. */
@@ -148,7 +166,11 @@ object Notifications {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        // Vibration is controlled by the channel on Android 8+; use the silent
+        // channel for "Sunyi" so it neither vibrates nor plays a channel sound.
+        val channelId = if (type == NotificationType.SILENT) CHANNEL_ID_SILENT else CHANNEL_ID
+
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
@@ -159,29 +181,21 @@ object Notifications {
 
         when (type) {
             NotificationType.SILENT -> {
-                builder.setSound(null)
-                builder.setVibrate(null)
+                // Silent channel: no sound, no vibration.
             }
             NotificationType.VIBRATE -> {
-                builder.setSound(null)
-                builder.setVibrate(vibrationPattern)
+                // Vibrating channel: vibration only (no sound).
             }
             NotificationType.DEFAULT -> {
                 // Sound via media stream so it plays even in vibrate/silent mode.
-                builder.setSound(null)
-                builder.setVibrate(vibrationPattern)
                 playSoundOnMediaStream(context, Settings.System.DEFAULT_NOTIFICATION_URI)
             }
             NotificationType.TAKBIR -> {
-                builder.setSound(null)
-                builder.setVibrate(vibrationPattern)
                 playSoundOnMediaStream(context, resourceSound(context))
             }
             NotificationType.RINGTONE -> {
                 val uri = ringtoneUri.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }
                     ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                builder.setSound(null)
-                builder.setVibrate(vibrationPattern)
                 playSoundOnMediaStream(context, uri)
             }
         }
