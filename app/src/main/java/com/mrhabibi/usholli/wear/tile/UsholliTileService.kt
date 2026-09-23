@@ -32,6 +32,12 @@ abstract class BaseUsholliTileService : TileService() {
     override fun onTileRequest(
         requestParams: RequestBuilders.TileRequest,
     ): ListenableFuture<TileBuilders.Tile> {
+        // Corner radius = half the tile's short side (Samsung's capsule ends).
+        val config = requestParams.deviceConfiguration
+        val widthDp = config.screenWidthDp
+        val heightDp = config.screenHeightDp
+        val cornerRadiusDp = if (widthDp > 0 && heightDp > 0) minOf(widthDp, heightDp) / 2f else 28f
+
         val tile = TileBuilders.Tile.Builder()
             .setResourcesVersion("1")
             .setFreshnessIntervalMillis(5 * 60 * 1000L)
@@ -41,7 +47,7 @@ abstract class BaseUsholliTileService : TileService() {
                         TimelineBuilders.TimelineEntry.Builder()
                             .setLayout(
                                 LayoutElementBuilders.Layout.Builder()
-                                    .setRoot(buildRootElement())
+                                    .setRoot(buildRootElement(cornerRadiusDp))
                                     .build(),
                             )
                             .build(),
@@ -61,7 +67,7 @@ abstract class BaseUsholliTileService : TileService() {
     }
 
     /** The layout to render for this tile service. */
-    protected abstract fun buildRootElement(): LayoutElementBuilders.LayoutElement
+    protected abstract fun buildRootElement(cornerRadiusDp: Float): LayoutElementBuilders.LayoutElement
 
     protected fun launchAction(): ActionBuilders.LaunchAction =
         ActionBuilders.LaunchAction.Builder()
@@ -77,7 +83,11 @@ abstract class BaseUsholliTileService : TileService() {
         ModifiersBuilders.Clickable.Builder().setOnClick(launchAction()).build()
 
     /** Vertical gradient matching the home menu's sky, with pill-shaped corners. */
-    protected fun background(topColor: Int, bottomColor: Int): ModifiersBuilders.Background {
+    protected fun background(
+        topColor: Int,
+        bottomColor: Int,
+        cornerRadiusDp: Float,
+    ): ModifiersBuilders.Background {
         val gradient = ColorBuilders.LinearGradient.Builder(
             ColorBuilders.argb(topColor),
             ColorBuilders.argb(bottomColor),
@@ -87,7 +97,7 @@ abstract class BaseUsholliTileService : TileService() {
             .setBrush(gradient)
             .setCorner(
                 ModifiersBuilders.Corner.Builder()
-                    .setRadius(DimensionBuilders.dp(28f))
+                    .setRadius(DimensionBuilders.dp(cornerRadiusDp))
                     .build(),
             )
             .build()
@@ -107,13 +117,16 @@ abstract class BaseUsholliTileService : TileService() {
      * Full schedule layout. [compact] uses tighter spacing/fonts so the whole
      * schedule fits inside the smaller 2x2 card.
      */
-    protected fun buildScheduleRoot(compact: Boolean): LayoutElementBuilders.LayoutElement {
+    protected fun buildScheduleRoot(
+        compact: Boolean,
+        cornerRadiusDp: Float,
+    ): LayoutElementBuilders.LayoutElement {
         val settings = SettingsStore(this).load()
         val schedule = ScheduleRepository(this).loadCachedSchedule()
         val now = LocalDateTime.now()
         val (topColor, bottomColor) = currentSkyColors(schedule, settings, now)
 
-        val hPad = if (compact) 16f else 32f
+        val hPad = if (compact) 36f else 32f
         val vPad = if (compact) 4f else 12f
         val citySize = if (compact) 11f else 12f
         val rowSize = if (compact) 12f else 13f
@@ -165,7 +178,7 @@ abstract class BaseUsholliTileService : TileService() {
             .setModifiers(
                 ModifiersBuilders.Modifiers.Builder()
                     .setClickable(clickable())
-                    .setBackground(background(topColor, bottomColor))
+                    .setBackground(background(topColor, bottomColor, cornerRadiusDp))
                     .build(),
             )
             .setWidth(DimensionBuilders.expand())
@@ -176,7 +189,7 @@ abstract class BaseUsholliTileService : TileService() {
     }
 
     /** Compact wide card (2x1) layout: city + next prayer name + time. */
-    protected fun buildCompactRoot(): LayoutElementBuilders.LayoutElement {
+    protected fun buildCompactRoot(cornerRadiusDp: Float): LayoutElementBuilders.LayoutElement {
         val settings = SettingsStore(this).load()
         val schedule = ScheduleRepository(this).loadCachedSchedule()
         val now = LocalDateTime.now()
@@ -227,7 +240,7 @@ abstract class BaseUsholliTileService : TileService() {
             .setModifiers(
                 ModifiersBuilders.Modifiers.Builder()
                     .setClickable(clickable())
-                    .setBackground(background(topColor, bottomColor))
+                    .setBackground(background(topColor, bottomColor, cornerRadiusDp))
                     .build(),
             )
             .setWidth(DimensionBuilders.expand())
@@ -311,15 +324,18 @@ class UsholliTileService : BaseUsholliTileService() {
         }
     }
 
-    override fun buildRootElement(): LayoutElementBuilders.LayoutElement = buildScheduleRoot(compact = false)
+    override fun buildRootElement(cornerRadiusDp: Float): LayoutElementBuilders.LayoutElement =
+        buildScheduleRoot(compact = false, cornerRadiusDp)
 }
 
 /** Samsung compact card (2x2): full schedule, tightened to fit. */
 class UsholliTileService2x2 : BaseUsholliTileService() {
-    override fun buildRootElement(): LayoutElementBuilders.LayoutElement = buildScheduleRoot(compact = true)
+    override fun buildRootElement(cornerRadiusDp: Float): LayoutElementBuilders.LayoutElement =
+        buildScheduleRoot(compact = true, cornerRadiusDp)
 }
 
 /** Samsung compact card (2x1, wide): city + next prayer name + time. */
 class UsholliTileService2x1 : BaseUsholliTileService() {
-    override fun buildRootElement(): LayoutElementBuilders.LayoutElement = buildCompactRoot()
+    override fun buildRootElement(cornerRadiusDp: Float): LayoutElementBuilders.LayoutElement =
+        buildCompactRoot(cornerRadiusDp)
 }
