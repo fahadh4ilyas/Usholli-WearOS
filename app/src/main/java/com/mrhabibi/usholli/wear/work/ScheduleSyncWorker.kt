@@ -22,11 +22,15 @@ class ScheduleSyncWorker(context: Context, params: WorkerParameters) :
     CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        val repo = ScheduleRepository(applicationContext)
+
+        // Cache the next 7 days of Hijri dates (independent of location).
+        repo.fetchAndCacheHijriRange()
+
         val settings = SettingsStore(applicationContext).load()
         if (!settings.hasLocation) return Result.success()
 
-        val schedule = ScheduleRepository(applicationContext)
-            .fetchAndCacheSchedule(settings.regionId)
+        val schedule = repo.fetchAndCacheSchedule(settings.regionId)
 
         return if (schedule != null) {
             AlarmScheduler.reschedule(applicationContext)

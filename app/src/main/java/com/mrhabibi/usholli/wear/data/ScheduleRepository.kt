@@ -2,6 +2,7 @@ package com.mrhabibi.usholli.wear.data
 
 import android.content.Context
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.mrhabibi.usholli.wear.data.remote.ApiClient
 import com.mrhabibi.usholli.wear.util.NetworkUtils
 import com.mrhabibi.usholli.wear.util.retryWithBackoff
@@ -34,14 +35,54 @@ class ScheduleRepository(private val context: Context) {
     }
 
     suspend fun hijriToday(): String? {
+        val today = LocalDate.now().toString()
+        // Prefer the cached value for today (works offline across midnight).
+        loadCachedHijriMap()[today]?.let { return it }
+
+        if (!NetworkUtils.isOnline(context)) return null
         val correction = store.load().hijriCorrection
-        if (!NetworkUtils.isOnline(context)) return store.loadCachedHijri()
         return try {
-            val date = api.hijriToday(adj = correction).data?.hijr?.today
-            if (date != null) store.cacheHijri(date)
+            val date = api.hijriFor(today, adj = correction).data?.hijr?.today
+            if (date != null) {
+                val map = loadCachedHijriMap().toMutableMap()
+                map[today] = date
+                cacheHijriMap(map)
+            }
             date
         } catch (e: Exception) {
-            store.loadCachedHijri()
+            null
+        }
+    }
+
+    /** Fetch and cache the Hijri date for the next [days] days (like the schedule cache). */
+    suspend fun fetchAndCacheHijriRange(days: Int = 7) {
+        if (!NetworkUtils.isOnline(context)) return
+        val correction = store.load().hijriCorrection
+        val map = loadCachedHijriMap().toMutableMap()
+        val today = LocalDate.now()
+        for (i in 0 until days) {
+            val date = today.plusDays(i.toLong()).toString()
+            if (map.containsKey(date)) continue
+            runCatching {
+                val hijri = api.hijriFor(date, adj = correction).data?.hijr?.today
+                if (hijri != null) map[date] = hijri
+            }
+        }
+        cacheHijriMap(map)
+    }
+
+    private val hijriMapType = object : TypeToken<Map<String, String>>() {}.type
+
+    private fun cacheHijriMap(map: Map<String, String>) {
+        store.cacheHijri(gson.toJson(map))
+    }
+
+    private fun loadCachedHijriMap(): Map<String, String> {
+        val json = store.loadCachedHijri() ?: return emptyMap()
+        return try {
+            gson.fromJson(json, hijriMapType)
+        } catch (e: Exception) {
+            emptyMap()
         }
     }
 

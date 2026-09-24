@@ -222,6 +222,11 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
     fun setHijriCorrection(correction: Int) {
         store.setHijriCorrection(correction)
         settings = store.load()
+        refreshHijri()
+    }
+
+    /** Re-fetch the Hijri date (called when the Gregorian date rolls over at midnight). */
+    fun refreshHijri() {
         viewModelScope.launch {
             hijri = repo.hijriToday()
         }

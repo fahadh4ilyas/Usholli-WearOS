@@ -32,6 +32,14 @@ interface MyQuranApi {
         @Query("method") method: String = "islamic-umalqura",
         @Query("adj") adj: Int = 0,
     ): CalendarResponse
+
+    @GET("v3/cal/hijr/{date}")
+    suspend fun hijriFor(
+        @Path("date") date: String, // YYYY-MM-DD (Gregorian)
+        @Query("tz") tz: String = "Asia/Jakarta",
+        @Query("method") method: String = "islamic-umalqura",
+        @Query("adj") adj: Int = 0,
+    ): CalendarResponse
 }
 
 // --- DTOs ---

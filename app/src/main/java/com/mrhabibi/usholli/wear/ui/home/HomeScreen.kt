@@ -72,6 +72,12 @@ fun HomeScreen(viewModel: UsholliViewModel, navController: NavHostController) {
         }
     }
 
+    // When the Gregorian date rolls over at midnight, re-fetch the Hijri date
+    // so it doesn't stay stuck on yesterday.
+    LaunchedEffect(now.toLocalDate()) {
+        viewModel.refreshHijri()
+    }
+
     val currentPeriod = schedule?.let { ScheduleUtil.currentPeriod(it, settings, now) } ?: Period.ISYA
     val next = schedule?.let { ScheduleUtil.nextPrayer(it, settings, now) }
     val entries = schedule?.let { ScheduleUtil.todayEntries(it, settings, now.toLocalDate()) } ?: emptyList()
