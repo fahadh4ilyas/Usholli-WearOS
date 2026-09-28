@@ -1,10 +1,8 @@
 package com.mrhabibi.usholli.wear.ui.settings
 
-import android.Manifest
 import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -39,7 +37,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.material.Switch
@@ -56,31 +53,6 @@ import com.mrhabibi.usholli.wear.ui.theme.TextDim
 fun SettingsScreen(viewModel: UsholliViewModel, navController: NavHostController) {
     val settings = viewModel.settings
     val context = LocalContext.current
-
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            viewModel.autoDetect()
-        } else {
-            viewModel.setAutoDetect(false)
-        }
-    }
-
-    val onAutoDetectToggled: (Boolean) -> Unit = { enabled ->
-        viewModel.setAutoDetect(enabled)
-        if (enabled) {
-            val granted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-            ) == PackageManager.PERMISSION_GRANTED
-            if (granted) {
-                viewModel.autoDetect()
-            } else {
-                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-        }
-    }
 
     // Exact-alarm permission (SCHEDULE_EXACT_ALARM), denied by default on Wear OS 6.
     var canExactAlarm by remember { mutableStateOf(canScheduleExactAlarms(context)) }
@@ -115,14 +87,6 @@ fun SettingsScreen(viewModel: UsholliViewModel, navController: NavHostController
                 onClick = { navController.navigate(Dest.LOCATION) },
             )
         }
-        item {
-            ToggleRow(
-                label = stringResource(R.string.auto_detect),
-                checked = settings.autoDetect,
-                onCheckedChange = onAutoDetectToggled,
-            )
-        }
-
         item { SectionLabel(stringResource(R.string.notification)) }
         item {
             ToggleRow(

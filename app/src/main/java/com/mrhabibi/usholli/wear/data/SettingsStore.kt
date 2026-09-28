@@ -110,11 +110,12 @@ class SettingsStore(context: Context) {
 
     fun loadCachedHijri(): String? = prefs.getString("hijri_cache", null)
 
-    // --- Schedule cache (JSON) so receivers can re-schedule without re-fetching ---
+    // --- Schedule cache (JSON), keyed by city id so switching cities keeps old caches ---
 
-    fun cacheSchedule(json: String) {
-        prefs.edit().putString("schedule_cache", json).apply()
+    fun cacheSchedule(cityId: String, json: String) {
+        prefs.edit().putString("schedule_cache_$cityId", json).apply()
     }
 
-    fun loadCachedSchedule(): String? = prefs.getString("schedule_cache", null)
+    fun loadCachedSchedule(cityId: String): String? =
+        prefs.getString("schedule_cache_$cityId", null)
 }

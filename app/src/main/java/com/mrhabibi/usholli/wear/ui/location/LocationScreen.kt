@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
@@ -92,12 +91,20 @@ fun LocationScreen(viewModel: UsholliViewModel, navController: NavHostController
                         imageVector = Icons.Filled.Search,
                         contentDescription = stringResource(R.string.search_city),
                         colorFilter = ColorFilter.tint(OnBackground),
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text(text = stringResource(R.string.search_city), color = OnBackground, fontSize = 12.sp)
                 }
             }
+        }
+
+        item {
+            CityRow(
+                cityName = stringResource(R.string.auto_detect),
+                onClick = {
+                    viewModel.autoDetect()
+                    navController.popBackStack()
+                },
+            )
         }
 
         if (loading && cities.isEmpty()) {

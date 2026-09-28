@@ -5,11 +5,15 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Build
+import android.os.Bundle
+import android.os.CancellationSignal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.mrhabibi.usholli.wear.R
@@ -27,7 +31,10 @@ import com.mrhabibi.usholli.wear.tile.UsholliTileService
 import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import java.time.LocalDate
 import java.util.Locale
 
 class UsholliViewModel(application: Application) : AndroidViewModel(application) {
@@ -94,11 +101,22 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
         updateSettings { it.copy(autoDetect = enabled) }
     }
 
-    /** Best-effort auto-detection: reverse-geocode GPS to a locality, then match a city. */
-    fun autoDetect() {
+    /** Manual auto-detection: force a fresh GPS fix, then select the nearest city. */
+    fun autoDetect() = detectLocation(forceFresh = true)
+
+    /** Run on first launch: auto-detect using the last known location (fast). */
+    fun autoDetectOnLaunch() {
+        if (settings.hasLocation) return
+        setAutoDetect(true)
+        detectLocation(forceFresh = false)
+    }
+
+    private fun detectLocation(forceFresh: Boolean) {
         viewModelScope.launch {
             val app = getApplication<Application>()
-            val location = lastKnownLocation(app) ?: run {
+            val location = withContext(Dispatchers.IO) {
+                if (forceFresh) freshLocation(app) else lastKnownLocation(app)
+            } ?: run {
                 error = app.getString(R.string.location_permission_needed)
                 return@launch
             }
@@ -111,11 +129,49 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /** Run on first launch: auto-detect the location so the schedule shows immediately. */
-    fun autoDetectOnLaunch() {
-        if (settings.hasLocation) return
-        setAutoDetect(true)
-        autoDetect()
+    /** Force a fresh GPS/network fix, falling back to the last known location. */
+    private suspend fun freshLocation(app: Application): Location? {
+        val lm = app.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        for (provider in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
+            val location = withTimeoutOrNull(10_000L) { requestCurrentLocation(lm, app, provider) }
+            if (location != null) return location
+        }
+        return lastKnownLocation(app)
+    }
+
+    private suspend fun requestCurrentLocation(
+        lm: LocationManager,
+        app: Application,
+        provider: String,
+    ): Location? = suspendCancellableCoroutine { cont ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val executor = ContextCompat.getMainExecutor(app)
+            val signal = CancellationSignal()
+            cont.invokeOnCancellation { signal.cancel() }
+            val consumer = java.util.function.Consumer<Location> { location ->
+                if (location != null && cont.isActive) cont.resume(location, null)
+            }
+            runCatching {
+                lm.getCurrentLocation(provider, signal, executor, consumer)
+            }.onFailure {
+                if (cont.isActive) cont.resume(null, null)
+            }
+        } else {
+            val listener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    if (cont.isActive) cont.resume(location, null)
+                }
+                override fun onProviderDisabled(provider: String) {}
+                override fun onProviderEnabled(provider: String) {}
+                override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+            }
+            @Suppress("DEPRECATION")
+            runCatching {
+                lm.requestSingleUpdate(provider, listener, null)
+            }.onFailure {
+                if (cont.isActive) cont.resume(null, null)
+            }
+        }
     }
 
     private fun applyCity(city: City, autoDetect: Boolean) {
@@ -123,6 +179,20 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             loading = true
             error = null
+
+            // Reuse the cached schedule for this city only if it still covers today.
+            val cached = repo.loadCachedSchedule(city.id)
+            val today = LocalDate.now().toString()
+            if (cached != null && cached.day(today) != null) {
+                schedule = cached
+                updateSettings { it.copy(regionName = cached.kabko, regionProv = cached.prov) }
+                AlarmScheduler.reschedule(getApplication())
+                UsholliTileService.requestUpdate(getApplication())
+                NextPrayerComplicationService.requestUpdate(getApplication())
+                loading = false
+                return@launch
+            }
+
             val fresh = repo.fetchAndCacheSchedule(city.id)
             if (fresh != null) {
                 schedule = fresh

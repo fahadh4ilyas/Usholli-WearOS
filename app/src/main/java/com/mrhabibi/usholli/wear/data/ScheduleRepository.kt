@@ -133,8 +133,16 @@ class ScheduleRepository(private val context: Context) {
         return Schedule(regionId, resp.data.kabko.orEmpty(), resp.data.prov.orEmpty(), days)
     }
 
+    /** Load the currently selected city's cached schedule (from settings). */
     fun loadCachedSchedule(): Schedule? {
-        val json = store.loadCachedSchedule() ?: return null
+        val regionId = store.load().regionId
+        if (regionId.isEmpty()) return null
+        return loadCachedSchedule(regionId)
+    }
+
+    /** Load a specific city's cached schedule, or null if not cached. */
+    fun loadCachedSchedule(cityId: String): Schedule? {
+        val json = store.loadCachedSchedule(cityId) ?: return null
         return try {
             gson.fromJson(json, Schedule::class.java)
         } catch (e: Exception) {
@@ -143,6 +151,6 @@ class ScheduleRepository(private val context: Context) {
     }
 
     fun cacheSchedule(schedule: Schedule) {
-        store.cacheSchedule(gson.toJson(schedule))
+        store.cacheSchedule(schedule.cityId, gson.toJson(schedule))
     }
 }
