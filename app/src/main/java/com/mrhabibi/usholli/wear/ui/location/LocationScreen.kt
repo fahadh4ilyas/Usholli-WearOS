@@ -1,6 +1,8 @@
 package com.mrhabibi.usholli.wear.ui.location
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,17 +25,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.material.Text
 import com.mrhabibi.usholli.wear.R
+import com.mrhabibi.usholli.wear.ui.LocationDetection
 import com.mrhabibi.usholli.wear.ui.UsholliViewModel
 import com.mrhabibi.usholli.wear.ui.theme.OnBackground
 import com.mrhabibi.usholli.wear.ui.theme.SurfaceVariant
@@ -43,9 +48,35 @@ import com.mrhabibi.usholli.wear.ui.theme.TextDim
 fun LocationScreen(viewModel: UsholliViewModel, navController: NavHostController) {
     val cities = viewModel.cities
     val loading = viewModel.citiesLoading
+    val detection = viewModel.detection
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        viewModel.clearDetection()
         viewModel.loadCities()
+    }
+
+    // Leave the screen once auto-detection has completed successfully.
+    LaunchedEffect(viewModel.detection) {
+        if (viewModel.detection is LocationDetection.Success) {
+            navController.popBackStack()
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { viewModel.autoDetect() }
+
+    val onAutoDetectClick = {
+        val granted = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            viewModel.autoDetect()
+        } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
     }
 
     val speechLauncher = rememberLauncherForActivityResult(
@@ -100,11 +131,28 @@ fun LocationScreen(viewModel: UsholliViewModel, navController: NavHostController
         item {
             CityRow(
                 cityName = stringResource(R.string.auto_detect),
-                onClick = {
-                    viewModel.autoDetect()
-                    navController.popBackStack()
-                },
+                onClick = onAutoDetectClick,
             )
+        }
+
+        when (val d = detection) {
+            is LocationDetection.Detecting -> item {
+                Text(
+                    text = stringResource(R.string.detecting_location),
+                    color = TextDim,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+            is LocationDetection.Failed -> item {
+                Text(
+                    text = d.message,
+                    color = TextDim,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+            else -> {}
         }
 
         if (loading && cities.isEmpty()) {

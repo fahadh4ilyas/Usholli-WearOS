@@ -56,6 +56,9 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         openHomeTrigger++
+        // Re-open (e.g. from the launcher or a tile) while the activity is already
+        // running: re-sync the city when auto-detect is active, like the mobile app.
+        viewModel.autoDetectOnLaunch()
     }
 
     private fun requestNotificationIfNeeded() {

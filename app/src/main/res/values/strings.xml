@@ -86,6 +86,8 @@
     <string name="location_permission_needed">Kompas kiblat membutuhkan ijin untuk mengakses lokasi Anda.</string>
     <string name="sensor_not_found">Sensor kompas tidak tersedia.</string>
     <string name="detecting_location">Mendeteksi lokasi…</string>
+    <string name="auto_detect_failed">Gagal mendeteksi lokasi. Aktifkan lokasi lalu coba lagi.</string>
+    <string name="auto_detect_no_permission">Izinkan akses lokasi untuk mendeteksi kota secara otomatis.</string>
     <string name="degree_angle">Derajat Sudut: %1$s°</string>
     <string name="loading">Memuat…</string>
     <string name="no_schedule">Belum ada jadwal. Pilih kota terlebih dahulu.</string>

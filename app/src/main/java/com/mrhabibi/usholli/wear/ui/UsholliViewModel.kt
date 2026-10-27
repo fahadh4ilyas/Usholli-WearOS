@@ -1,7 +1,9 @@
 package com.mrhabibi.usholli.wear.ui
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
@@ -37,6 +39,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
 import java.util.Locale
 
+/** One-shot UI state for the "Deteksi Otomatis" location flow. */
+sealed interface LocationDetection {
+    data object Idle : LocationDetection
+    data object Detecting : LocationDetection
+    data object Success : LocationDetection
+    data class Failed(val message: String) : LocationDetection
+}
+
+/** Strips the "KABUPATEN"/"KAB."/"KOTA" prefix from a Geocoder locality name. */
+private val cityPrefixRegex = Regex("^(KABUPATEN|KAB\\.?|KOTA)\\s+")
+
 class UsholliViewModel(application: Application) : AndroidViewModel(application) {
 
     private val store = SettingsStore(application)
@@ -61,6 +74,9 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
         private set
 
     var citiesLoading by mutableStateOf(false)
+        private set
+
+    var detection by mutableStateOf<LocationDetection>(LocationDetection.Idle)
         private set
 
     init {
@@ -97,47 +113,79 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
 
     fun selectCity(city: City) = applyCity(city, autoDetect = false)
 
-    fun setAutoDetect(enabled: Boolean) {
-        updateSettings { it.copy(autoDetect = enabled) }
+    /** Manual auto-detection: force a fresh location fix, then select the nearest city. */
+    fun autoDetect() {
+        detection = LocationDetection.Detecting
+        detectLocation(forceFresh = true, reportToUi = true)
     }
 
-    /** Manual auto-detection: force a fresh GPS fix, then select the nearest city. */
-    fun autoDetect() = detectLocation(forceFresh = true)
-
-    /** Run on first launch: auto-detect using the last known location (fast). */
+    /**
+     * Run when the app opens: re-detect the city whenever auto-detect is active,
+     * or when no city has been chosen yet. Uses the last known location for speed.
+     */
     fun autoDetectOnLaunch() {
-        if (settings.hasLocation) return
-        setAutoDetect(true)
-        detectLocation(forceFresh = false)
+        if (settings.hasLocation && !settings.autoDetect) return
+        detectLocation(forceFresh = false, reportToUi = false)
     }
 
-    private fun detectLocation(forceFresh: Boolean) {
+    fun clearDetection() {
+        detection = LocationDetection.Idle
+    }
+
+    private fun detectLocation(forceFresh: Boolean, reportToUi: Boolean) {
         viewModelScope.launch {
             val app = getApplication<Application>()
+            if (!hasLocationPermission()) {
+                if (reportToUi) {
+                    detection = LocationDetection.Failed(app.getString(R.string.auto_detect_no_permission))
+                }
+                return@launch
+            }
             val location = withContext(Dispatchers.IO) {
                 if (forceFresh) freshLocation(app) else lastKnownLocation(app)
-            } ?: run {
-                error = app.getString(R.string.location_permission_needed)
+            }
+            if (location == null) {
+                if (reportToUi) {
+                    detection = LocationDetection.Failed(app.getString(R.string.auto_detect_failed))
+                }
                 return@launch
             }
             val city = withContext(Dispatchers.IO) { reverseGeocode(app, location) }
             if (city != null) {
                 applyCity(city, autoDetect = true)
-            } else {
-                error = app.getString(R.string.not_found)
+                if (reportToUi) detection = LocationDetection.Success
+            } else if (reportToUi) {
+                detection = LocationDetection.Failed(app.getString(R.string.not_found))
             }
         }
     }
 
-    /** Force a fresh GPS/network fix, falling back to the last known location. */
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            getApplication<Application>(),
+            Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == PackageManager.PERMISSION_GRANTED
+
+    /**
+     * Force a fresh location fix, preferring the fused provider (on a watch this
+     * relays the paired phone's location) before the watch's own GPS/network.
+     */
     private suspend fun freshLocation(app: Application): Location? {
         val lm = app.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        for (provider in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
-            val location = withTimeoutOrNull(10_000L) { requestCurrentLocation(lm, app, provider) }
+        for (provider in locationProviders(lm)) {
+            val location = withTimeoutOrNull(15_000L) { requestCurrentLocation(lm, app, provider) }
             if (location != null) return location
         }
         return lastKnownLocation(app)
     }
+
+    /** Fused first (phone-relayed on Wear OS), then the watch's own GPS/network. */
+    private fun locationProviders(lm: LocationManager): List<String> =
+        listOf(
+            LocationManager.FUSED_PROVIDER,
+            LocationManager.GPS_PROVIDER,
+            LocationManager.NETWORK_PROVIDER,
+        ).filter { it in lm.allProviders }
 
     private suspend fun requestCurrentLocation(
         lm: LocationManager,
@@ -209,7 +257,7 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
 
     private fun lastKnownLocation(app: Application): Location? {
         val lm = app.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        for (provider in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)) {
+        for (provider in locationProviders(lm)) {
             val location = runCatching { lm.getLastKnownLocation(provider) }.getOrNull()
             if (location != null) return location
         }
@@ -224,7 +272,7 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
                     geocoder.getFromLocation(
                         location.latitude,
                         location.longitude,
-                        1,
+                        3,
                         object : Geocoder.GeocodeListener {
                             override fun onGeocode(addresses: List<Address>) {
                                 continuation.resumeWith(Result.success(addresses))
@@ -238,19 +286,33 @@ class UsholliViewModel(application: Application) : AndroidViewModel(application)
             } else {
                 @Suppress("DEPRECATION")
                 runCatching {
-                    geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                    geocoder.getFromLocation(location.latitude, location.longitude, 3)
                 }.getOrNull() ?: emptyList()
             }
 
-        val address = addresses.firstOrNull() ?: return null
-        val locality = address.subAdminArea ?: address.locality ?: address.adminArea ?: return null
-        val cleaned = locality
-            .replace("Kabupaten ", "")
-            .replace("Kota ", "")
-            .trim()
+        val cities = repo.listCities()
+        if (cities.isEmpty()) return null
 
-        // Search the full list for a matching name (loaded lazily).
-        return repo.listCities().firstOrNull { it.lokasi.contains(cleaned, ignoreCase = true) }
+        // Match each address's kabupaten/kota against the API city list.
+        for (address in addresses) {
+            for (name in listOf(address.subAdminArea, address.locality, address.adminArea)) {
+                if (name.isNullOrBlank()) continue
+                matchCity(normalizeCityName(name), cities)?.let { return it }
+            }
+        }
+        return null
+    }
+
+    private fun normalizeCityName(raw: String): String = raw
+        .uppercase(Locale("id", "ID"))
+        .replace(cityPrefixRegex, "")
+        .trim()
+
+    private fun matchCity(normalized: String, cities: List<City>): City? {
+        if (normalized.isEmpty()) return null
+        val named = cities.map { it to normalizeCityName(it.lokasi) }
+        named.firstOrNull { it.second == normalized }?.first?.let { return it }
+        return named.firstOrNull { it.second.contains(normalized) }?.first
     }
 
     fun setAlarmMode(enabled: Boolean) {
